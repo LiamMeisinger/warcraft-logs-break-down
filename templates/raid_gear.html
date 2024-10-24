@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="my-4">Encounter Gear Breakdown</h1>
+
+{% for entry in entries %}
+    <div class="card my-3">
+        <div class="card-header">
+            <strong class="player-name">{{ entry.name }}</strong>
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for item in entry.gear %}
+                {% if item.itemLevel > 0 %}
+                <li class="list-group-item">
+                    <div>
+                        <strong>{{ item.name }}</strong> {{ item.permanentEnchantName }}
+                    </div>
+                    <div>
+                        Item Level: {{ item.itemLevel }}
+                    </div>
+
+                </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+{% endfor %}
+
+<a href="/" class="btn btn-primary mt-4">Home</a>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="my-4">Raid Healing Breakdown</h1>
+
+{% for entry in entries %}
+    <div class="card my-3">
+        <div class="card-header">
+            <div>
+                <strong class="player-name">{{ entry.name }}</strong>
+            </div>
+            <div>
+                Total Healing: {{ entry.total }}
+            </div>
+            <div>
+                <ul>
+                    {% for target in entry.targets %}
+                    <li>{{ target.name }}: {{ target.total }} healing</li>
+                    {% endfor %}
+                </ul>
+
+            </div>
+
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for ability in entry.abilities %}
+            <li class="list-group-item">
+                {{ ability.name }} Healing: {{ ability.total }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endfor %}
+
+<a href="/" class="btn btn-primary mt-4">Home</a>
+{% endblock %}

@@ -1,10 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Welcome</title>
-</head>
-<body><p>Hello There!</p>
+{% extends "layout.html" %}
 
-</body>
-</html>
+{% block content %}
+<h1 class="my-4">Welcome to the BISLogDiver</h1>
+
+<p>This tool retrieves and displays raid data from Warcraft Logs, including player gear, damage breakdowns, and healing breakdowns.</p>
+
+<div class="mt-4">
+    <a href="/raid-data" class="btn btn-primary">Retrieve Raid Data</a>
+</div>
+{% endblock %}

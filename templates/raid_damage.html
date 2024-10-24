@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="my-4">Encounter Damage Breakdown</h1>
+
+{% for entry in entries %}
+    <div class="card my-3">
+        <div class="card-header">
+            <div>
+                <strong class="player-name">{{ entry.name }}</strong>
+            </div>
+            <div>
+                Total Damage: {{ entry.total }}
+            </div>
+            <!-- Damage Targets Breakdown -->
+            <div>
+                <ul>
+                    {% for target in entry.targets %}
+                    <li>{{ target.name }}: {{ target.total }} damage</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+        </div>
+        <div class="card-body">
+            <ul class="list-group list-group-flush">
+                {% for ability in entry.abilities %}
+                <li class="list-group-item">
+                    <div>
+                        <strong>{{ ability.name }} Damage:</strong> {{ ability.total }}
+                    </div>
+
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endfor %}
+
+<a href="/" class="btn btn-primary mt-4">Home</a>
+{% endblock %}

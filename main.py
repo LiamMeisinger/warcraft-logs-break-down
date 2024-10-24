@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template_string, render_template
 import requests
 from requests.auth import HTTPBasicAuth
 import time
@@ -20,7 +20,6 @@ client_secret = secrets["CLIENT_SECRET"]
 access_token = None
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Needed for session management
 raid_data_json = None
 raid_data_cache = None
 last_fetched = 0
@@ -28,7 +27,7 @@ last_fetched = 0
 
 def is_cache_valid():
     # Cache expires after 10 minutes
-    return time.time() - last_fetched < 600  # 600 seconds = 10 minutes
+    return time.time() - last_fetched < 6000  # 6000 seconds = 100 minutes
 
 
 # Step 1: Request access token using client credentials flow
@@ -49,13 +48,7 @@ def index():
             token = response.json()
             access_token = token['access_token']  # Store the token in the global variable
 
-            # Render HTML with Home button and token
-            html_content = f'''
-                <h1>Access Token Retrieved</h1>
-                <p>Please Head to the Home Page</p>
-                <a href="/home"><button>Home</button></a>
-            '''
-            return render_template_string(html_content)
+            return render_template('index.html')
 
         else:
             return f"Error fetching token: {response.status_code} - {response.text}"
@@ -106,14 +99,7 @@ def raid_data():
     if response.status_code == 200:
         raid_data_cache = response.json()
         last_fetched = time.time()
-        return '''
-           <h1>Let's get Into it</h1>
-           <h2>The following data has been retrieved from Warcraft Logs</h2>
-           <a href="/raid-damage"><button>View Damage Breakdown</button></a>
-           <a href="/raid-healing"><button>View Healing Breakdown</button></a>
-           <a href="/gear-check"><button>View Gear Breakdown</button></a>
-           <a href="/json-data"><button>Raw Data</button></a>
-       '''
+        return render_template('home.html')
     else:
         # Handle errors
         return f"Error fetching raid data: {response.status_code} - {response.text}"
@@ -121,89 +107,35 @@ def raid_data():
 
 @app.route('/home')
 def home():
-    return '''
-        <h1>Welcome to the BISLogDiver</h1>
-        <h2>The following data has been retrieved from Warcraft Logs</h2>
-        <a href="/raid-data"><button>Retrieve Data</button></a>
-    '''
+    return render_template('home.html')
 
 
 @app.route('/raid-damage')
 def raid_damage():
     global raid_data_cache
 
-    # Check if cached data is valid
     if not is_cache_valid() or raid_data_cache is None:
-        return '''
-        <h1>Data not available</h1>
-        <p>Please retrieve fresh data from the /raid-data route.</p>
-        <a href="/home"><button>Home</button></a>
-        '''
+        return "No data available. Please retrieve the raid data first.", 404
 
-    # Extract the entries for each player from the cached JSON
+    # Extract the damage data
     entries = raid_data_cache['data']['reportData']['report']['damageTable']['data']['entries']
 
-    # Create HTML string to display damage breakdown
-    damage_breakdown = "<h1>Raid Damage Breakdown</h1>"
-
-    for entry in entries:
-        damage_breakdown += (f"<h2>{entry['name']} ({entry['type']})"
-                             f"\nTotal Damage: {entry['total']}</h2>")
-        # Targets breakdown
-        damage_breakdown += "<h3>Targets:</h3><ul>"
-        for target in entry["targets"]:
-            damage_breakdown += f"<li>{target['name']}: {target['total']} damage</li>"
-        damage_breakdown += "</ul>"
-
-        # Abilities breakdown
-        damage_breakdown += "<h3>Abilities:</h3><ul>"
-        for ability in entry["abilities"]:
-            damage_breakdown += f"<li>{ability['name']}: {ability['total']} damage</li>"
-        damage_breakdown += "</ul>"
-
-    damage_breakdown += '<a href="/home"><button>Home</button></a>'
-
-    # Render the result as HTML
-    return render_template_string(damage_breakdown)
+    # Render the raid_damage.html template and pass the entries data
+    return render_template('raid_damage.html', entries=entries)
 
 
 @app.route('/raid-healing')
 def raid_healing():
     global raid_data_cache
 
-    # Check if cached data is valid
     if not is_cache_valid() or raid_data_cache is None:
-        return '''
-           <h1>Data not available</h1>
-           <p>Please retrieve fresh data from the /raid-data route.</p>
-           <a href="/home"><button>Home</button></a>
-           '''
-    # Extract the entries for each player from the JSON
+        return "No data available. Please retrieve the raid data first.", 404
+
+    # Extract the damage data
     entries = raid_data_cache['data']['reportData']['report']['healingTable']['data']['entries']
 
-    # Create HTML string to display damage breakdown
-    healing_breakdown = "<h1>Raid Healing Breakdown</h1>"
-
-    for entry in entries:
-        healing_breakdown += (f"<h2>{entry['name']} ({entry['type']})"
-                              f"\nTotal Healing: {entry['total']}</h2>")
-
-        # Targets breakdown
-        healing_breakdown += "<h3>Targets:</h3><ul>"
-        for target in entry["targets"]:
-            healing_breakdown += f"<li>{target['name']}: {target['total']} healing</li>"
-        healing_breakdown += "</ul>"
-
-        # Abilities breakdown
-        healing_breakdown += "<h3>Abilities:</h3><ul>"
-        for ability in entry["abilities"]:
-            healing_breakdown += f"<li>{ability['name']}: {ability['total']} healing</li>"
-        healing_breakdown += "</ul>"
-
-    healing_breakdown += '<a href="/home"><button>Home</button></a>'
-
-    # Render the result as HTML
-    return render_template_string(healing_breakdown)
+    # Render the raid_damage.html template and pass the entries data
+    return render_template('raid_healing.html', entries=entries)
 
 
 @app.route('/json-data')
@@ -218,34 +150,17 @@ def json_data():
 
 
 @app.route('/gear-check')
-def gear_check():
+def raid_gear():
     global raid_data_cache
+
     if not is_cache_valid() or raid_data_cache is None:
         return "No data available. Please retrieve the raid data first.", 404
 
-    # Extract the entries for each player from the JSON
+    # Extract gear data from the cached JSON
     entries = raid_data_cache['data']['reportData']['report']['damageTable']['data']['entries']
 
-    gear_breakdown = "<h1>Gear Breakdown</h1>"
-
-    for entry in entries:
-        gear_breakdown += f"<h2>Player: {entry['name']}</h2>"
-        gear_breakdown += "<ul>"
-        for item in entry.get('gear', []):
-            item_name = item.get('name', 'Unknown Item')
-            item_level = item.get('itemLevel', 'Unknown Level')
-            enchant_name = item.get('permanentEnchantName', 'No Enchant')
-
-            if item_level == 0:
-                continue
-
-            gear_breakdown += f"<li>{item_name} - Item Level: {item_level} - Enchant: {enchant_name}</li>"
-        gear_breakdown += "</ul>"
-
-    gear_breakdown += '<a href="/home"><button>Home</button></a>'
-
-    # Render the result as HTML
-    return render_template_string(gear_breakdown)
+    # Render the raid_gear.html template and pass the entries data
+    return render_template('raid_gear.html', entries=entries)
 
 
 if __name__ == '__main__':
