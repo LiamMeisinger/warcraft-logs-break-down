@@ -5,7 +5,7 @@
 
 {% for entry in entries %}
     <div class="card my-3">
-        <div class="card-header">
+        <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
             <div>
                 <strong class="player-name">{{ entry.name }}</strong>
             </div>
@@ -13,13 +13,18 @@
                 Total Damage: {{ entry.total }}
             </div>
             <!-- Damage Targets Breakdown -->
-            <div>
-                <ul>
+        <div id="collapse-{{ loop.index }}" class="collapse">
+            <ul class="list-group list-group-flush">
                     {% for target in entry.targets %}
-                    <li>{{ target.name }}: {{ target.total }} damage</li>
+               <li class="list-group-item">
+                   <div>
+                       <strong>{{ target.name }}</strong>: {{ target.total }} damage
+                   </div>
+
+               </li>
                     {% endfor %}
-                </ul>
-            </div>
+            </ul>
+        </div>
 
         </div>
         <div class="card-body">

@@ -1,11 +1,35 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1 class="my-4">Welcome to the BISLogDiver</h1>
+<h1 class="my-4">Retrieve the Raid Data</h1>
 
 <p>This tool retrieves and displays raid data from Warcraft Logs, including player gear, damage breakdowns, and healing breakdowns.</p>
 
 <div class="mt-4">
-    <a href="/raid-data" class="btn btn-primary">Retrieve Raid Data</a>
+    <form action="/raid-data" method="post">
+        <div class="form-group">
+            <label for="raidCode">Enter Raid Code: </label>
+            <input type="text" id="raidCode" name="raidCode" class="form-control" required placeholder="https://classic.warcraftlogs.com/reports/RAIDCODE">
+        </div>
+        <hr>
+        <button type="submit" class="btn btn-primary mt-3">Retrieve Raid Data</button>
+    </form>
 </div>
+
+<!-- Display the list of encounters if available -->
+{% if fights %}
+    <h2 class="mt-5">Boss Encounters</h2>
+    <hr>
+    <ul class="list-group">
+        {% for fight in fights %}
+            <li class="list-group-item">{{ fight.name }} (ID: {{ fight.id }})</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<!-- Display error messages if any -->
+{% if error %}
+    <div class="alert alert-danger mt-4">{{ error }}</div>
+{% endif %}
+
 {% endblock %}

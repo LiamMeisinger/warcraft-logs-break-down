@@ -5,24 +5,25 @@
 
 {% for entry in entries %}
     <div class="card my-3">
-        <div class="card-header">
+        <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
             <strong class="player-name">{{ entry.name }}</strong>
         </div>
-        <ul class="list-group list-group-flush">
-            {% for item in entry.gear %}
-                {% if item.itemLevel > 0 %}
-                <li class="list-group-item">
-                    <div>
-                        <strong>{{ item.name }}</strong> {{ item.permanentEnchantName }}
-                    </div>
-                    <div>
-                        Item Level: {{ item.itemLevel }}
-                    </div>
-
-                </li>
-                {% endif %}
-            {% endfor %}
-        </ul>
+        <div id="collapse-{{ loop.index }}" class="collapse">
+            <ul class="list-group list-group-flush">
+                {% for item in entry.gear %}
+                    {% if item.itemLevel > 0 %}
+                    <li class="list-group-item">
+                        <div>
+                            <strong>{{ item.name }}</strong> {{ item.permanentEnchantName }}
+                        </div>
+                        <div>
+                            Item Level: {{ item.itemLevel }}
+                        </div>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 {% endfor %}
 
