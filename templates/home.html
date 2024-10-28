@@ -22,7 +22,10 @@
     <hr>
     <ul class="list-group">
         {% for fight in fights %}
-            <li class="list-group-item">{{ fight.name }} (ID: {{ fight.id }})</li>
+            <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
+                <li class="list-group-item"><strong>{{ fight.name }}</strong> (ID: {{ fight.id }})</li>
+            </div>
+
         {% endfor %}
     </ul>
 {% endif %}

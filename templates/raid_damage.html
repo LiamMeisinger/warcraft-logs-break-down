@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1 class="my-4">Encounter Damage Breakdown</h1>
+<h1 class="my-4">Overall Damage Breakdown</h1>
 
 {% for entry in entries %}
     <div class="card my-3">
@@ -32,7 +32,7 @@
                 {% for ability in entry.abilities %}
                 <li class="list-group-item">
                     <div>
-                        <strong>{{ ability.name }} Damage:</strong> {{ ability.total }}
+                        <strong>{{ ability.name }} Damage</strong>: {{ ability.total }}
                     </div>
 
                 </li>
@@ -42,5 +42,5 @@
     </div>
 {% endfor %}
 
-<a href="/" class="btn btn-primary mt-4">Home</a>
+<a href="/raid-data" class="btn btn-primary mt-4">Home</a>
 {% endblock %}

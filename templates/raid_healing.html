@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1 class="my-4">Raid Healing Breakdown</h1>
+<h1 class="my-4">Overall Healing Breakdown</h1>
 
 {% for entry in entries %}
     <div class="card my-3">
@@ -27,15 +27,17 @@
             </div>
 
         </div>
+        <div class="card-body">
         <ul class="list-group list-group-flush">
             {% for ability in entry.abilities %}
             <li class="list-group-item">
-                {{ ability.name }} Healing: {{ ability.total }}
+                <strong>{{ ability.name }} Healing</strong>: {{ ability.total }}
             </li>
             {% endfor %}
         </ul>
+       </div>
     </div>
 {% endfor %}
 
-<a href="/" class="btn btn-primary mt-4">Home</a>
+<a href="/raid-data" class="btn btn-primary mt-4">Home</a>
 {% endblock %}

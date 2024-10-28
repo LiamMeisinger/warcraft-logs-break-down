@@ -28,11 +28,10 @@ raid_code = ""
 
 
 def is_cache_valid():
-    # Cache expires after 10 minutes
+    # Cache expires after 100 minutes
     return time.time() - last_fetched < 6000  # 6000 seconds = 100 minutes
 
 
-# Step 1: Request access token using client credentials flow
 @app.route('/')
 def index():
     global access_token  # Declare the global token variable
@@ -59,14 +58,12 @@ def index():
         return f"An error occurred: {str(e)}"
 
 
-# Example route that will use the stored access token
 @app.route('/raid-data', methods=['GET', 'POST'])
 def raid_data():
-    global access_token  # Access the global token
-    global raid_data_cache, last_fetched
+    global access_token, raid_data_cache, last_fetched, raid_code
 
     if request.method == 'POST':
-        raid_code = request.form['raidCode']  # Get the raid code from the form input
+        raid_code = request.form['raidCode']
 
         # Prepare headers with the access token
         headers = {
@@ -74,8 +71,8 @@ def raid_data():
             'Content-Type': 'application/json'
         }
 
-        # Insert the raid_code dynamically into the GraphQL query
-        query = f"""
+        # Step 1: Get all fight IDs
+        query_fights = f"""
             {{
               reportData {{
                 report(code: "{raid_code}") {{
@@ -83,57 +80,59 @@ def raid_data():
                     id
                     name
                   }}
-                  damageTable: table(dataType: DamageDone, fightIDs: [31])
-                  healingTable: table(dataType: Healing, fightIDs: [31])
                 }}
               }}
             }}
         """
+        response_fights = requests.post(
+            'https://www.warcraftlogs.com/api/v2/client',
+            headers=headers,
+            json={'query': query_fights}
+        )
 
-        # Make the POST request to the Warcraft Logs API
-        response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers, json={'query': query})
+        if response_fights.status_code == 200:
+            data = response_fights.json()
+            fights = data.get('data', {}).get('reportData', {}).get('report', {}).get('fights', [])
 
-        if response.status_code == 200:
-            # Successfully received data, so cache it and update timestamp
-            raid_data_cache = response.json()
-            last_fetched = time.time()
-            fights = raid_data_cache['data']['reportData']['report']['fights']
+            # Filter to include only boss encounters
+            unique_fights = {fight['name']: fight for fight in fights if fight['name'] in bosses}
+            fight_ids = [fight['id'] for fight in unique_fights.values()]
 
-            # Dictionary to store the highest ID for each unique name
-            unique_fights = {}
-            for fight in fights:
-                name = fight['name']
-                id = fight['id']
+            if not fight_ids:
+                return render_template('home.html', error="No valid boss encounters found.")
 
-                if name in bosses:
-                    if name not in unique_fights or id > unique_fights[name]['id']:
-                        unique_fights[name] = fight
+            # Step 2: Fetch damage and healing data
+            query = f"""
+            {{
+              reportData {{
+                report(code: "{raid_code}") {{
+                  fights {{
+                    id
+                    name
+                  }}
+                  damageTable: table(dataType: DamageDone, fightIDs: {fight_ids})
+                  healingTable: table(dataType: Healing, fightIDs: {fight_ids})
+                }}
+              }}
+            }}
+        """
+            response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers,
+                                     json={'query': query})
 
-            # Convert the dictionary back to a list of fights
-            unique_fights_list = list(unique_fights.values())
-            return render_template('home.html', fights=unique_fights_list)
+            if response.status_code == 200:
+                raid_data_cache = response.json()
+                last_fetched = time.time()
+                return render_template('home.html', fights=unique_fights.values())
 
-        else:
-            # Handle errors if API call fails
-            error_message = f"Error fetching raid data: {response.status_code} - {response.text}"
-            return render_template('home.html', error=error_message)
+            return render_template('home.html',
+                                   error=f"Error fetching raid data: {response.status_code} - {response.text}")
 
+    # Use cached data if available and valid
     if is_cache_valid() and raid_data_cache is not None:
         fights = raid_data_cache['data']['reportData']['report']['fights']
+        unique_fights = {fight['name']: fight for fight in fights if fight['name'] in bosses}
+        return render_template('home.html', fights=unique_fights.values())
 
-        unique_fights = {}
-        for fight in fights:
-            name = fight['name']
-            id = fight['id']
-
-            if name in bosses:
-                if name not in unique_fights or id > unique_fights[name]['id']:
-                    unique_fights[name] = fight
-
-        unique_fights_list = list(unique_fights.values())
-        return render_template('home.html', fights=unique_fights_list)
-
-    # If GET request and no cache available, prompt user to enter a raid code
     return render_template('home.html', error="Please enter a raid code.")
 
 
@@ -151,6 +150,10 @@ def raid_damage():
 
     # Extract the damage data
     entries = raid_data_cache['data']['reportData']['report']['damageTable']['data']['entries']
+
+    # Example to verify length of targets
+    for entry in entries:
+        print(f"{entry['name']} has {len(entry['targets'])} targets")
 
     # Render the raid_damage.html template and pass the entries data
     return render_template('raid_damage.html', entries=entries)
@@ -197,7 +200,6 @@ def raid_gear():
 
 if __name__ == '__main__':
     app.run(port=8000)
-
 
 """TODO
 1. Migrate Healing and dmg to ID encounter
