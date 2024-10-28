@@ -201,5 +201,4 @@ if __name__ == '__main__':
 
 """TODO
 1. Migrate Healing and dmg to ID encounter
-2. Cache raid Data on /home directory
 """
