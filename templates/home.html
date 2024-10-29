@@ -22,10 +22,20 @@
     <hr>
     <ul class="list-group">
         {% for fight in fights %}
-            <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
-                <li class="list-group-item"><strong>{{ fight.name }}</strong> (ID: {{ fight.id }})</li>
-            </div>
+            <!-- Each boss encounter as a card with a collapsible section for buttons -->
+            <div class="card my-3">
+                <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
+                    <strong>{{ fight.name }}</strong> (ID: {{ fight.id }})
+                </div>
 
+                <div id="collapse-{{ loop.index }}" class="collapse">
+                    <div class="card-body">
+                        <a href="/raid-damage/{{ fight.id }}" class="btn btn-outline-danger">Damage</a>
+                        <a href="/raid-healing/{{ fight.id }}" class="btn btn-outline-success">Healing</a>
+<!--                        <a href="/gear-breakdown/{{ fight.id }}" class="btn btn-outline-primary">Gear</a>-->
+                    </div>
+                </div>
+            </div>
         {% endfor %}
     </ul>
 {% endif %}

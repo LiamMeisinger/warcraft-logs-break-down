@@ -1,43 +1,42 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1 class="my-4">Overall Healing Breakdown</h1>
+<h1 class="my-4">Healing Breakdown</h1>
 
-{% for entry in entries %}
-    <div class="card my-3">
-        <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
-            <div>
-                <strong class="player-name">{{ entry.name }}</strong>
+{% if entries %}
+    <!-- Loop through each healer in the entries -->
+    {% for entry in entries %}
+        <div class="card my-3">
+            <div class="card-header">
+                <strong>{{ entry.name }}</strong> - Total Healing: {{ entry.total }}
             </div>
-            <div>
-                Total Healing: {{ entry.total }}
-            </div>
-            <div id="collapse-{{ loop.index }}" class="collapse">
+
+            <div class="card-body">
+                <!-- List healing done to each target -->
+                <h5>Targets</h5>
                 <ul class="list-group list-group-flush">
                     {% for target in entry.targets %}
-                    <li class="list-group-item">
-                        <div>
+                        <li class="list-group-item">
                             <strong>{{ target.name }}</strong>: {{ target.total }} healing
-                        </div>
-
-                    </li>
+                        </li>
                     {% endfor %}
                 </ul>
 
+                <!-- List healing done by each ability -->
+                <h5 class="mt-3">Abilities</h5>
+                <ul class="list-group list-group-flush">
+                    {% for ability in entry.abilities %}
+                        <li class="list-group-item">
+                            <strong>{{ ability.name }}</strong>: {{ ability.total }} healing
+                        </li>
+                    {% endfor %}
+                </ul>
             </div>
-
         </div>
-        <div class="card-body">
-        <ul class="list-group list-group-flush">
-            {% for ability in entry.abilities %}
-            <li class="list-group-item">
-                <strong>{{ ability.name }} Healing</strong>: {{ ability.total }}
-            </li>
-            {% endfor %}
-        </ul>
-       </div>
-    </div>
-{% endfor %}
+    {% endfor %}
+{% else %}
+    <p>No healing data available for this encounter.</p>
+{% endif %}
 
-<a href="/raid-data" class="btn btn-primary mt-4">Home</a>
+<a href="/raid-data" class="btn btn-primary mt-4">Back to All Encounters</a>
 {% endblock %}

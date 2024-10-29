@@ -141,38 +141,6 @@ def home():
     return render_template('home.html')
 
 
-@app.route('/raid-damage')
-def raid_damage():
-    global raid_data_cache
-
-    if not is_cache_valid() or raid_data_cache is None:
-        return "No data available. Please retrieve the raid data first.", 404
-
-    # Extract the damage data
-    entries = raid_data_cache['data']['reportData']['report']['damageTable']['data']['entries']
-
-    # Example to verify length of targets
-    for entry in entries:
-        print(f"{entry['name']} has {len(entry['targets'])} targets")
-
-    # Render the raid_damage.html template and pass the entries data
-    return render_template('raid_damage.html', entries=entries)
-
-
-@app.route('/raid-healing')
-def raid_healing():
-    global raid_data_cache
-
-    if not is_cache_valid() or raid_data_cache is None:
-        return "No data available. Please retrieve the raid data first.", 404
-
-    # Extract the damage data
-    entries = raid_data_cache['data']['reportData']['report']['healingTable']['data']['entries']
-
-    # Render the raid_damage.html template and pass the entries data
-    return render_template('raid_healing.html', entries=entries)
-
-
 @app.route('/json-data')
 def json_data():
     global raid_data_cache
@@ -196,6 +164,103 @@ def raid_gear():
 
     # Render the raid_gear.html template and pass the entries data
     return render_template('raid_gear.html', entries=entries)
+
+
+@app.route('/raid-damage/<int:fight_id>')
+def raid_damage(fight_id):
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+    query = f"""
+                {{
+                  reportData {{
+                    report(code: "{raid_code}") {{
+                      fights {{
+                        id
+                        name
+                      }}
+                      damageTable: table(dataType: DamageDone, fightIDs: [{fight_id}])
+                    }}
+                  }}
+                }}
+            """
+    response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers,
+                             json={'query': query})
+
+    # Parse response data
+    if response.status_code != 200 or 'errors' in response.json():
+        return "Failed to retrieve data for the specified fight.", 500
+
+    damage_data = response.json()['data']['reportData']['report']['damageTable']['data']['entries']
+
+    # Render template with the filtered data
+    return render_template('raid_damage.html', entries=damage_data)
+
+
+@app.route('/raid-healing/<int:fight_id>')
+def raid_healing(fight_id):
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+    query = f"""
+                {{
+                  reportData {{
+                    report(code: "{raid_code}") {{
+                      fights {{
+                        id
+                        name
+                      }}
+                      healingTable: table(dataType: Healing, fightIDs: [{fight_id}])
+                    }}
+                  }}
+                }}
+            """
+    response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers,
+                             json={'query': query})
+    print(response.json())
+
+    # Parse response data
+    if response.status_code != 200 or 'errors' in response.json():
+        return "Failed to retrieve data for the specified fight.", 500
+
+    healing_data = response.json()['data']['reportData']['report']['healingTable']['data']['entries']
+
+    # Render template with the filtered data
+    return render_template('raid_healing.html', entries=healing_data)
+
+
+# @app.route('/gear-breakdown/<int:fight_id>')
+# def gear_breakdown(fight_id):
+#     headers = {
+#         'Authorization': f'Bearer {access_token}',
+#         'Content-Type': 'application/json'
+#     }
+#     query = f"""
+#                     {{
+#                       reportData {{
+#                         report(code: "{raid_code}") {{
+#                           fights {{
+#                             id
+#                             name
+#                           }}
+#                           damageTable: table(dataType: DamageDone, fightIDs: [{fight_id}])
+#                         }}
+#                       }}
+#                     }}
+#                 """
+#     response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers,
+#                              json={'query': query})
+#
+#     # Parse response data
+#     if response.status_code != 200 or 'errors' in response.json():
+#         return "Failed to retrieve data for the specified fight.", 500
+#
+#     gear_entries = raid_data_cache['data']['reportData']['report']['damageTable']['data']['entries']
+#     print(gear_entries)
+#
+#     return render_template('gear_breakdown.html', gear_entries=gear_entries)
 
 
 if __name__ == '__main__':

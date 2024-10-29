@@ -1,13 +1,12 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1 class="my-4">Overall Raid Gear Breakdown</h1>
+<h1 class="my-4">Gear Breakdown</h1>
 
-{% for entry in entries %}
+{% for entry in gear_entries %}
     <div class="card my-3">
         <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
             <strong class="player-name">{{ entry.name }}</strong> ({{ entry.type }}) ({{ entry.itemLevel }})
-
         </div>
         <div id="collapse-{{ loop.index }}" class="collapse">
             <ul class="list-group list-group-flush">
@@ -15,7 +14,7 @@
                     {% if item.itemLevel > 0 %}
                     <li class="list-group-item">
                         <div>
-                            <strong>{{ item.name }}</strong> {{ item.permanentEnchantName }} {{ item.onUseEnchantName }}
+                            <strong>{{ item.name }}</strong> {{ item.permanentEnchantName }} | {{ item.onUseEnchantName }}
                         </div>
                         <div>
                             Item Level: {{ item.itemLevel }}
