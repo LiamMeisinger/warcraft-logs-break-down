@@ -7,11 +7,11 @@
     <!-- Loop through each player or entity in the entries -->
     {% for entry in entries %}
         <div class="card my-3">
-            <div class="card-header">
+            <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
                 <strong>{{ entry.name }}</strong> - Total Damage: {{ entry.total }}
             </div>
 
-            <div class="card-body">
+            <div id="collapse-{{ loop.index }}" class="collapse">
                 <!-- List damage done to each target -->
                 <h5>Targets</h5>
                 <ul class="list-group list-group-flush">

@@ -3,7 +3,7 @@
 {% block content %}
 <h1 class="my-4">Retrieve the Raid Data</h1>
 
-<p>This tool retrieves and displays raid data from Warcraft Logs, including player gear, damage breakdowns, and healing breakdowns.</p>
+<p>This tool retrieves and displays raid data from Warcraft Logs, including player gear, damage breakdowns, healing breakdowns and buff checks.</p>
 
 <div class="mt-4">
     <form action="/raid-data" method="post">
@@ -32,6 +32,8 @@
                     <div class="card-body">
                         <a href="/raid-damage/{{ fight.id }}" class="btn btn-outline-danger">Damage</a>
                         <a href="/raid-healing/{{ fight.id }}" class="btn btn-outline-success">Healing</a>
+                        <a href="/raid-buff/{{ fight.id }}" class="btn btn-outline-info">Buffs</a>
+
 <!--                        <a href="/gear-breakdown/{{ fight.id }}" class="btn btn-outline-primary">Gear</a>-->
                     </div>
                 </div>

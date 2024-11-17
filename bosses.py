@@ -10,4 +10,12 @@ bosses = ['Magmaw',
           'Theralion and Valiona',
           'Ascendant Council',
           "Cho'gall",
-          'Sinestra']
+          'Sinestra',
+          'Baleroc',
+          'Shannox',
+          "Beth'tilac",
+          'Lord Rhyolith',
+          'Alysrazor',
+          'Majordomo Staghelm',
+          'Ragnaros'
+          ]

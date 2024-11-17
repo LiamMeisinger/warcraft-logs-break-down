@@ -15,7 +15,9 @@
                     {% if item.itemLevel > 0 %}
                     <li class="list-group-item">
                         <div>
-                            <strong>{{ item.name }}</strong> {{ item.permanentEnchantName }} {{ item.onUseEnchantName }}
+                            <strong>{{ item.name }}</strong>
+                            <span style="color: green;">{{ item.permanentEnchantName }}</span>
+                            <span style="color: blue;">{{ item.onUseEnchantName }}</span>
                         </div>
                         <div>
                             Item Level: {{ item.itemLevel }}

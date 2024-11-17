@@ -25,6 +25,7 @@ raid_data_json = None
 raid_data_cache = None
 last_fetched = 0
 raid_code = ""
+raider_ids = []
 
 
 def is_cache_valid():
@@ -60,7 +61,7 @@ def index():
 
 @app.route('/raid-data', methods=['GET', 'POST'])
 def raid_data():
-    global access_token, raid_data_cache, last_fetched, raid_code
+    global access_token, raid_data_cache, last_fetched, raid_code, raider_ids
 
     if request.method == 'POST':
         raid_code = request.form['raidCode']
@@ -76,9 +77,11 @@ def raid_data():
             {{
               reportData {{
                 report(code: "{raid_code}") {{
-                  fights {{
+                  fights(killType:Kills) {{
                     id
                     name
+                    difficulty
+                    friendlyPlayers
                   }}
                 }}
               }}
@@ -96,7 +99,11 @@ def raid_data():
 
             # Filter to include only boss encounters
             unique_fights = {fight['name']: fight for fight in fights if fight['name'] in bosses}
+
             fight_ids = [fight['id'] for fight in unique_fights.values()]
+            raider_ids = [fight['friendlyPlayers'] for fight in unique_fights.values()][0]
+            print(fight_ids)
+            print(raider_ids)
 
             if not fight_ids:
                 return render_template('home.html', error="No valid boss encounters found.")
@@ -180,7 +187,7 @@ def raid_damage(fight_id):
                         id
                         name
                       }}
-                      damageTable: table(dataType: DamageDone, fightIDs: [{fight_id}])
+                      damageTable: table(dataType: DamageDone, killType:Kills, fightIDs: [{fight_id}])
                     }}
                   }}
                 }}
@@ -212,7 +219,7 @@ def raid_healing(fight_id):
                         id
                         name
                       }}
-                      healingTable: table(dataType: Healing, fightIDs: [{fight_id}])
+                      healingTable: table(dataType: Healing, killType:Kills, fightIDs: [{fight_id}])
                     }}
                   }}
                 }}
@@ -231,36 +238,42 @@ def raid_healing(fight_id):
     return render_template('raid_healing.html', entries=healing_data)
 
 
-# @app.route('/gear-breakdown/<int:fight_id>')
-# def gear_breakdown(fight_id):
-#     headers = {
-#         'Authorization': f'Bearer {access_token}',
-#         'Content-Type': 'application/json'
-#     }
-#     query = f"""
-#                     {{
-#                       reportData {{
-#                         report(code: "{raid_code}") {{
-#                           fights {{
-#                             id
-#                             name
-#                           }}
-#                           damageTable: table(dataType: DamageDone, fightIDs: [{fight_id}])
-#                         }}
-#                       }}
-#                     }}
-#                 """
-#     response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers,
-#                              json={'query': query})
-#
-#     # Parse response data
-#     if response.status_code != 200 or 'errors' in response.json():
-#         return "Failed to retrieve data for the specified fight.", 500
-#
-#     gear_entries = raid_data_cache['data']['reportData']['report']['damageTable']['data']['entries']
-#     print(gear_entries)
-#
-#     return render_template('gear_breakdown.html', gear_entries=gear_entries)
+@app.route('/raid-buff/<int:fight_id>')
+def raid_buff(fight_id):
+    global raider_ids
+
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+
+    # Dictionary to store buffs grouped by raider ID
+    buffs_by_raider = {}
+
+    for raider_id in raider_ids:
+        query = f"""
+        {{
+          reportData {{
+            report(code: "{raid_code}") {{
+              buffTable: table(dataType: Buffs, fightIDs:[{fight_id}], sourceID:{raider_id}, viewOptions:16)
+            }}
+          }}
+        }}
+        """
+        response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers, json={'query': query})
+
+        if response.status_code != 200 or 'errors' in response.json():
+            return response.json(), 500
+
+        # Parse the response and extract relevant buff data
+        auras = response.json()['data']['reportData']['report']['buffTable']['data']['auras']
+        buffs = [{"name": aura["name"], "totalUses": aura["totalUses"]} for aura in auras]
+
+        # Add buffs to the dictionary under the raider ID
+        buffs_by_raider[raider_id] = buffs
+
+    # Pass the data to the template
+    return render_template('raid_buff.html', buffs_by_raider=buffs_by_raider)
 
 
 if __name__ == '__main__':
