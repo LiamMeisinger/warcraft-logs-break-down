@@ -108,7 +108,41 @@ def raid_data():
             if not fight_ids:
                 return render_template('home.html', error="No valid boss encounters found.")
 
-            # Step 2: Fetch damage and healing data
+            # Step 2: Fetch raider names and filter by `raider_ids`
+            query_master_data = f"""
+            {{
+              reportData {{
+                report(code: "{raid_code}") {{
+                  masterData(translate: false) {{
+                    actors(type: "player") {{
+                      name
+                      id
+                    }}
+                  }}
+                }}
+              }}
+            }}
+            """
+            response_master_data = requests.post(
+                'https://www.warcraftlogs.com/api/v2/client',
+                headers=headers,
+                json={'query': query_master_data}
+            )
+
+            if response_master_data.status_code == 200:
+                master_data = response_master_data.json()
+                actors = master_data.get('data', {}).get('reportData', {}).get('report', {}).get('masterData', {}).get(
+                    'actors', [])
+
+                # Filter actors by `raider_ids`
+                filtered_actors = [actor for actor in actors if actor['id'] in raider_ids]
+
+                # Log or use the filtered actors
+                # print("Filtered Actors:", filtered_actors)
+            else:
+                return render_template('home.html', error="Failed to fetch raider names.")
+
+            # Step 3: Fetch damage and healing data
             query = f"""
             {{
               reportData {{
@@ -122,14 +156,14 @@ def raid_data():
                 }}
               }}
             }}
-        """
+            """
             response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers,
                                      json={'query': query})
 
             if response.status_code == 200:
                 raid_data_cache = response.json()
                 last_fetched = time.time()
-                return render_template('home.html', fights=unique_fights.values())
+                return render_template('home.html', fights=unique_fights.values(), raiders=filtered_actors)
 
             return render_template('home.html',
                                    error=f"Error fetching raid data: {response.status_code} - {response.text}")
@@ -169,8 +203,11 @@ def raid_gear():
     # Extract gear data from the cached JSON
     entries = raid_data_cache['data']['reportData']['report']['damageTable']['data']['entries']
 
-    # Render the raid_gear.html template and pass the entries data
-    return render_template('raid_gear.html', entries=entries)
+    # Filter out entries where the name contains "tricks"
+    filtered_entries = [entry for entry in entries if "tricks of the" not in entry["name"].lower()]
+
+    # Render the raid_gear.html template and pass the filtered entries data
+    return render_template('raid_gear.html', entries=filtered_entries)
 
 
 @app.route('/raid-damage/<int:fight_id>')
@@ -201,8 +238,15 @@ def raid_damage(fight_id):
 
     damage_data = response.json()['data']['reportData']['report']['damageTable']['data']['entries']
 
+    filtered_damage_data = [entry for entry in damage_data if "tricks of the" not in entry["name"].lower()]
+
+    # sort the data highest to lowest
+    sorted_damage_data = sorted(filtered_damage_data, key=lambda x: x["total"], reverse=True)
+    for entry in sorted_damage_data:
+        entry["total"] = f"{entry['total']:,}"
+
     # Render template with the filtered data
-    return render_template('raid_damage.html', entries=damage_data)
+    return render_template('raid_damage.html', entries=sorted_damage_data)
 
 
 @app.route('/raid-healing/<int:fight_id>')
@@ -226,7 +270,7 @@ def raid_healing(fight_id):
             """
     response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers,
                              json={'query': query})
-    print(response.json())
+    # print(response.json())
 
     # Parse response data
     if response.status_code != 200 or 'errors' in response.json():
@@ -234,8 +278,13 @@ def raid_healing(fight_id):
 
     healing_data = response.json()['data']['reportData']['report']['healingTable']['data']['entries']
 
+    # sort the data highest to lowest
+    sorted_healing_data = sorted(healing_data, key=lambda x: x["total"], reverse=True)
+    for entry in sorted_healing_data:
+        entry["total"] = f"{entry['total']:,}"
+
     # Render template with the filtered data
-    return render_template('raid_healing.html', entries=healing_data)
+    return render_template('raid_healing.html', entries=sorted_healing_data)
 
 
 @app.route('/raid-buff/<int:fight_id>')
@@ -247,7 +296,35 @@ def raid_buff(fight_id):
         'Content-Type': 'application/json'
     }
 
-    # Dictionary to store buffs grouped by raider ID
+    # Query master data for raider names and IDs
+    query_master_data = f"""
+    {{
+      reportData {{
+        report(code: "{raid_code}") {{
+          masterData(translate: false) {{
+            actors(type: "player") {{
+              name
+              id
+            }}
+          }}
+        }}
+      }}
+    }}
+    """
+    response_master_data = requests.post(
+        'https://www.warcraftlogs.com/api/v2/client',
+        headers=headers,
+        json={'query': query_master_data}
+    )
+
+    if response_master_data.status_code != 200:
+        return "Failed to fetch master data.", 500
+
+    master_data = response_master_data.json()
+    actors = master_data.get('data', {}).get('reportData', {}).get('report', {}).get('masterData', {}).get('actors', [])
+    id_to_name = {actor['id']: actor['name'] for actor in actors}  # Map IDs to names
+
+    # Buffs grouped by raider ID
     buffs_by_raider = {}
 
     for raider_id in raider_ids:
@@ -263,17 +340,25 @@ def raid_buff(fight_id):
         response = requests.post('https://www.warcraftlogs.com/api/v2/client', headers=headers, json={'query': query})
 
         if response.status_code != 200 or 'errors' in response.json():
-            return response.json(), 500
+            continue
 
-        # Parse the response and extract relevant buff data
         auras = response.json()['data']['reportData']['report']['buffTable']['data']['auras']
-        buffs = [{"name": aura["name"], "totalUses": aura["totalUses"]} for aura in auras]
+        self_applied = []
+        other_buffs = []
 
-        # Add buffs to the dictionary under the raider ID
-        buffs_by_raider[raider_id] = buffs
+        for aura in auras:
+            if aura['name'] in ["Golem's Strength", "Tol'vir Agility", "Volcanic Power", "Synapse Springs"]:
+                self_applied.append({"name": aura["name"], "totalUses": aura["totalUses"]})
+            else:
+                other_buffs.append({"name": aura["name"], "totalUses": aura["totalUses"]})
 
-    # Pass the data to the template
-    return render_template('raid_buff.html', buffs_by_raider=buffs_by_raider)
+        buffs_by_raider[raider_id] = {
+            "self_applied": self_applied,
+            "other_buffs": other_buffs
+        }
+
+    # Pass both `buffs_by_raider` and `id_to_name` to the template
+    return render_template('raid_buff.html', buffs_by_raider=buffs_by_raider, id_to_name=id_to_name)
 
 
 if __name__ == '__main__':

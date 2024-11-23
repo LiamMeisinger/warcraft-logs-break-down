@@ -3,6 +3,16 @@
 {% block content %}
 <h1 class="my-4">Healing Breakdown</h1>
 
+<style>
+  .category-heading {
+    padding: 10px 15px;
+    background-color: #c2c2c2;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+</style>
+
 {% if entries %}
     <!-- Loop through each healer in the entries -->
     {% for entry in entries %}
@@ -13,7 +23,7 @@
 
             <div id="collapse-{{ loop.index }}" class="collapse">
                 <!-- List healing done to each target -->
-                <h5>Targets</h5>
+                <h5 class="mt-3 category-heading">Targets</h5>
                 <ul class="list-group list-group-flush">
                     {% for target in entry.targets %}
                         <li class="list-group-item">
@@ -23,7 +33,7 @@
                 </ul>
 
                 <!-- List healing done by each ability -->
-                <h5 class="mt-3">Abilities</h5>
+                <h5 class="mt-3 category-heading">Abilities</h5>
                 <ul class="list-group list-group-flush">
                     {% for ability in entry.abilities %}
                         <li class="list-group-item">

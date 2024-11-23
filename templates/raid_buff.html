@@ -1,22 +1,43 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1 class="my-4">Buff Breakdown</h1>
+<h1 class="my-4">Encounter Buffs Breakdown</h1>
+
+<style>
+  .buff-category-heading {
+    padding: 10px 15px;
+    background-color: #c2c2c2;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+</style>
 
 {% if buffs_by_raider %}
-    <!-- Loop through each raider ID and its buffs -->
+    <!-- Loop through each raider ID -->
     {% for raider_id, buffs in buffs_by_raider.items() %}
         <div class="card my-3">
+            <!-- Collapsible header -->
             <div class="card-header" data-bs-toggle="collapse" href="#collapse-{{ loop.index }}" role="button" aria-expanded="false" aria-controls="collapse-{{ loop.index }}">
-                <strong>Raider ID: {{ raider_id }}</strong>
+                <strong>{{ id_to_name[raider_id] }}</strong>
             </div>
 
             <div id="collapse-{{ loop.index }}" class="collapse">
-                <!-- List buffs -->
-                <h5 class="mt-3">  Self-Applied Buffs</h5>
+                <!-- Self-Applied Buffs -->
+                <h5 class="mt-3 buff-category-heading">Pot and Tinker Usage</h5>
                 <ul class="list-group list-group-flush">
-                    {% for buff in buffs %}
-                        <li class="list-group-item">
+                    {% for buff in buffs.self_applied %}
+                        <li class="list-group-item dropdown-item">
+                            <strong>{{ buff.name }}</strong>: {{ buff.totalUses }} uses
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <!-- Other Buffs -->
+                <h5 class="mt-3 buff-category-heading">Other Buffs</h5>
+                <ul class="list-group list-group-flush">
+                    {% for buff in buffs.other_buffs %}
+                        <li class="list-group-item dropdown-item">
                             <strong>{{ buff.name }}</strong>: {{ buff.totalUses }} uses
                         </li>
                     {% endfor %}
